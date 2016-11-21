@@ -13,6 +13,8 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Optional;
@@ -175,12 +177,15 @@ public class FXMLDocumentController implements Initializable {
              entry.setContentText("Entry e-mail adress:");
              email = entry.showAndWait().get();
              int i = email.indexOf('.');
-             if (email.contains("@")&&i!=0&&email.charAt(i+1)>0) ex=true;
+             int a = email.indexOf("@");
+             if (i!=-1&&a!=-1) ex=true;
          } while (ex==false);
          data.add(new Person(String.valueOf(data.size()+1),name,birth,sex,email));
+         Collections.sort(data, (Person o1, Person o2) -> o1.compareTo(o2));
          text.setText("");
          for (int i=0;i<data.size();i++)
          {
+             data.get(i).setIndex(String.valueOf(i));
              text.appendText(data.get(i).printPerson());
          }
     }}
@@ -203,8 +208,8 @@ public class FXMLDocumentController implements Initializable {
       int ind = 0;
       for (int i=0;i<data.size();i++)
       {
-          if (data.get(ind).getIndex()==index){
-              data.remove(index);
+          if (data.get(i).getIndex().equals(index)){
+              data.remove(i);
               ind=1;
           }
       }
@@ -215,10 +220,12 @@ public class FXMLDocumentController implements Initializable {
          inf.setHeaderText("Delete");
          inf.setContentText("There is no contact with " + Integer.toString(ind) + " index");
       }
-      data.remove(ind);
       text.setText("");
+             Collections.sort(data, Person::compareTo);
+
          for (int i=0;i<data.size();i++)
          {
+             data.get(i).setIndex(String.valueOf(i));
              text.appendText(data.get(i).printPerson());
          }
     }
@@ -304,7 +311,8 @@ public class FXMLDocumentController implements Initializable {
              entry.setContentText("Entry e-mail adress:");
              email = entry.showAndWait().get();
              int i = email.indexOf('.');
-             if (email.contains("@")&&i!=0&&email.charAt(i+1)>0) ex=true;
+             int a = email.indexOf("@");
+             if (email.contains("@")&&i!=0&&email.charAt(i+1)>0&&email.charAt(a+1)!=0) ex=true;
          } while (ex==false);
              Person temp = data.get(Integer.parseInt(ind));
              temp.setEmailAddress(email);
@@ -314,6 +322,8 @@ public class FXMLDocumentController implements Initializable {
              break;
          }
     }while (loop==true);
+         text.setText("");
+         Collections.sort(data, (Person o1, Person o2) -> o1.compareTo(o2));
          text.setText("");
          for (int i=0;i<data.size();i++)
          {
