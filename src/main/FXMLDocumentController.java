@@ -312,7 +312,7 @@ public class FXMLDocumentController implements Initializable {
              email = entry.showAndWait().get();
              int i = email.indexOf('.');
              int a = email.indexOf("@");
-             if (email.contains("@")&&i!=0&&email.charAt(i+1)>0&&email.charAt(a+1)!=0) ex=true;
+             if (i!=-1&&a!=-1) ex=true;
          } while (ex==false);
              Person temp = data.get(Integer.parseInt(ind));
              temp.setEmailAddress(email);
