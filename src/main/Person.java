@@ -2,16 +2,15 @@
 package main;
 
 import java.io.Serializable;
-import java.util.Date;
-
 public class Person implements Comparable<Person>,Serializable {
 
 
 
     @Override
     public int compareTo(Person o) {
-        if (this.name.compareTo(o.name)==0){
-            return this.birthday.compareTo(o.birthday);
+        if (this.name.compareTo(o.name)==0)
+        {
+            return this.gender.compareTo(o.gender);
         }
         return this.name.compareTo(o.name);
     }
@@ -22,22 +21,20 @@ public class Person implements Comparable<Person>,Serializable {
   
     private String index;
     private String name; 
-    private Date birthday;
     private Sex gender;
     private String emailAddress;
   
-    Person(String Index,String nameArg, Date birthdayArg,
+    Person(String Index,String nameArg,
         Sex genderArg, String emailArg) {
         index = Index;
         name = nameArg;
-        birthday = birthdayArg;
         gender = genderArg;
         emailAddress = emailArg;
     }  
 
 
     public String printPerson() {
-      return (this.getIndex() + " " + this.getName() + " " + this.getBirthday() + " " + this.getGender() + " " + this.getEmailAddress() + "\n");
+      return (this.getIndex() + " " + this.getName() + " "  + this.getGender() + " " + this.getEmailAddress() + "\n");
     }
     
     public Sex getGender() {
@@ -60,16 +57,8 @@ public class Person implements Comparable<Person>,Serializable {
         return emailAddress;
     }
     
-    public Date getBirthday() {
-        return birthday;
-    }
-
     public void setName(String name) {
         this.name = name;
-    }
-
-    public void setBirthday(Date birthday) {
-        this.birthday = birthday;
     }
 
     public void setGender(Sex gender) {

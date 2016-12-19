@@ -26,6 +26,16 @@
                   <MenuItem fx:id="menu2_3" disable="true" mnemonicParsing="false" onAction="#modify" text="Modify" />
             </items>
           </Menu>
+            <Menu mnemonicParsing="false" text="SQL">
+              <items>
+                <MenuItem fx:id="menu3_1" disable="true" mnemonicParsing="false" onAction="#impor" text="Import..." />
+                  <MenuItem fx:id="menu3_2" disable="true" mnemonicParsing="false" onAction="#export" text="Export..." />
+              </items>
+            </Menu>
+            <Menu fx:id="menu4" mnemonicParsing="false" onAction="#about" text="More">
+               <items>
+                  <MenuItem fx:id="menu4_1" mnemonicParsing="false" onAction="#about" text="About" />
+               </items></Menu>
         </menus>
       </MenuBar>
    </children>

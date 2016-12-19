@@ -9,16 +9,17 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URL;
-import java.text.DateFormat;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
@@ -34,6 +35,7 @@ import static main.Person.Sex.MALE;
 
 public class FXMLDocumentController implements Initializable {
     ArrayList<Person> data = new ArrayList();
+    SingletonSQL database;
     Alert inf;
     Alert alert;
     Date birth;
@@ -56,14 +58,31 @@ public class FXMLDocumentController implements Initializable {
     @FXML
     private MenuItem menu2_3;
     @FXML
+    private MenuItem menu3_1;
+    @FXML
+    private MenuItem menu3_2;
+    @FXML
     private TextArea text;
     @FXML
-    private void create() throws FileNotFoundException, IOException
-    {
+    private void about(){
+        Alert asd = new Alert(Alert.AlertType.INFORMATION);
+        asd.setTitle("PhoneBook");
+        asd.setContentText("To start you need to create or open file. Then you can add,modify or delete entries."
+                + " You can also import and export from and to mysql database. To close you have to save file and use exit in menu.");
+        asd.showAndWait();
+    }
+    @FXML
+    private void create(){
         select = new FileChooser();
         ExtensionFilter a = new ExtensionFilter("Plik pbk (*.pbk)","*.pbk");
         select.getExtensionFilters().add(a);
-        out = new ObjectOutputStream(new FileOutputStream((select.showSaveDialog(null))));
+        try {
+            out = new ObjectOutputStream(new FileOutputStream((select.showSaveDialog(null))));
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        }
         menu1_1.setDisable(true);
         menu1_2.setDisable(true);
         menu1_4.setDisable(true);
@@ -71,28 +90,49 @@ public class FXMLDocumentController implements Initializable {
         menu2_1.setDisable(false);
         menu2_2.setDisable(false);
         menu2_3.setDisable(false);
+        menu3_1.setDisable(false);
     }
     @FXML
-    private void open() throws FileNotFoundException, IOException, ClassNotFoundException
+    private void open()
     {
         select = new FileChooser();
         ExtensionFilter a = new ExtensionFilter("Plik pbk (*.pbk)","*.pbk");
         select.getExtensionFilters().add(a);
         File plik = select.showOpenDialog(null);
-        in = new ObjectInputStream(new FileInputStream(plik));
+        try {
+            in = new ObjectInputStream(new FileInputStream(plik));
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        }
         try{
             while(true) 
             {
                 data.add((Person) in.readObject());
             }
         }catch (EOFException e) {
+        } catch (IOException | ClassNotFoundException ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
         }finally{
-            in.close();
+            try {
+                in.close();
+            } catch (IOException ex) {
+                Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
+        Collections.sort(data, (Person o1, Person o2) -> o1.compareTo(o2));
         for (int i=0;i<data.size();i++){
+                 data.get(i).setIndex(Integer.toString(i));
                  text.appendText(data.get(i).printPerson());
             }
-        out = new ObjectOutputStream(new FileOutputStream((plik)));
+        try {
+            out = new ObjectOutputStream(new FileOutputStream((plik)));
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        }
         menu1_1.setDisable(true);
         menu1_2.setDisable(true);
         menu1_3.setDisable(false);
@@ -100,6 +140,7 @@ public class FXMLDocumentController implements Initializable {
         menu2_1.setDisable(false);
         menu2_2.setDisable(false);
         menu2_3.setDisable(false);
+        menu3_1.setDisable(false);
     }
     @FXML
     private void save() throws IOException
@@ -118,9 +159,10 @@ public class FXMLDocumentController implements Initializable {
         menu2_1.setDisable(true);
         menu2_2.setDisable(true);
         menu2_3.setDisable(true);
+        menu3_1.setDisable(true);
     }
     @FXML
-    private void create1() throws ParseException
+    private void create1()
     {
         if (out==null)
         {
@@ -155,24 +197,8 @@ public class FXMLDocumentController implements Initializable {
          {
              sex = FEMALE;
          }
-         entry.setContentText("Enter birtday(Month DD, YYYY):");
-         DateFormat format = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH);
-         Boolean ex=false;
-         do{
-         try{   birth = format.parse(entry.showAndWait().get());
-                ex=true;
-         }
-         catch (ParseException e){
-             inf = new Alert(Alert.AlertType.ERROR);
-             inf.setTitle("Phone Book");
-             inf.setHeaderText("Add");
-             inf.setContentText("Wrong data entered");
-             inf.showAndWait();
-             ex=false;
-         }}
-         while (ex==false);
          String email;
-         ex=false;
+            boolean ex = false;
          do{
              entry.setContentText("Entry e-mail adress:");
              email = entry.showAndWait().get();
@@ -180,7 +206,7 @@ public class FXMLDocumentController implements Initializable {
              int a = email.indexOf("@");
              if (i!=-1&&a!=-1) ex=true;
          } while (ex==false);
-         data.add(new Person(String.valueOf(data.size()+1),name,birth,sex,email));
+         data.add(new Person(String.valueOf(data.size()+1),name,sex,email));
          Collections.sort(data, (Person o1, Person o2) -> o1.compareTo(o2));
          text.setText("");
          for (int i=0;i<data.size();i++)
@@ -231,7 +257,7 @@ public class FXMLDocumentController implements Initializable {
     }
     
     @FXML
-    private void modify() throws ParseException{
+    private void modify(){
         entry = new TextInputDialog();
         entry.setTitle("Phone Book");
         entry.setHeaderText("Modify");
@@ -242,11 +268,10 @@ public class FXMLDocumentController implements Initializable {
         alert.setHeaderText("Modify");
         alert.setContentText("Which information would you like to modify?");
         ButtonType buttonTypeOne = new ButtonType("Name");
-        ButtonType buttonTypeTwo = new ButtonType("BirthDay");
         ButtonType buttonTypeThree = new ButtonType("Sex");
         ButtonType buttonTypeFour = new ButtonType("E-Mail");
         ButtonType buttonTypeFive = new ButtonType("End");
-        alert.getButtonTypes().setAll(buttonTypeOne, buttonTypeTwo, buttonTypeThree, buttonTypeFour, buttonTypeFive);
+        alert.getButtonTypes().setAll(buttonTypeOne, buttonTypeThree, buttonTypeFour, buttonTypeFive);
         boolean loop=false;
         do{
         Optional<ButtonType> anser = alert.showAndWait();
@@ -256,30 +281,6 @@ public class FXMLDocumentController implements Initializable {
             entry.setContentText("Enter a name:");
             Person temp = data.get(Integer.parseInt(ind));
             temp.setName(entry.showAndWait().get());
-            data.set(Integer.parseInt(ind), temp);
-         }
-         else if (anser.get()==buttonTypeTwo){
-            entry.setTitle("Phone Book");
-            entry.setHeaderText("Add");
-            entry.setContentText("Enter a birthday:");
-            Person temp = data.get(Integer.parseInt(ind));
-            Boolean ex=false;
-            entry.setContentText("Enter birtday(Month DD, YYYY):");
-         DateFormat format = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH);
-         do{
-         try{   birth = format.parse(entry.showAndWait().get());
-                ex=true;
-         }
-         catch (ParseException e){
-             inf = new Alert(Alert.AlertType.ERROR);
-             inf.setTitle("Phone Book");
-             inf.setHeaderText("Add");
-             inf.setContentText("Wrong data entered");
-             inf.showAndWait();
-             ex=false;
-         }}
-         while (ex==false);
-            temp.setBirthday(birth);
             data.set(Integer.parseInt(ind), temp);
          }
          else if (anser.get()==buttonTypeThree){
@@ -327,8 +328,73 @@ public class FXMLDocumentController implements Initializable {
          text.setText("");
          for (int i=0;i<data.size();i++)
          {
+             data.get(i).setIndex(Integer.toString(i));
              text.appendText(data.get(i).printPerson());
          }
+    }
+    @FXML
+    private synchronized void impor(){
+        boolean flag=false;
+        ResultSet result = null;
+        int fl=0;
+        do{
+        entry = new TextInputDialog();
+        entry.setTitle("PhoneBook");
+        entry.setHeaderText("Database URL");
+        entry.setContentText("Entry database url(example jdbc:mysql://localhost:3306/test) :");
+        String url = entry.showAndWait().get();
+        entry.setHeaderText("Database Login");
+        entry.setContentText("Entry database login:");
+        String login = entry.showAndWait().get();
+        entry.setHeaderText("Database Password");
+        entry.setContentText("Entry database password:");
+        String password = entry.showAndWait().get();
+        database = SingletonSQL.access();        
+            fl = database.createConnection(url, login, password);
+            if (fl!=1){
+                alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("PhoneBook");
+                alert.setHeaderText("Connection Error");
+                alert.showAndWait();
+            }
+        }while(fl!=1);
+        try {PreparedStatement p = database.conn.prepareStatement("SELECT * FROM phonebook");
+            result = p.executeQuery();
+        } catch (SQLException ex) {
+            System.out.println("Error in query" + ex.getMessage());
+        }
+        try {
+        while(result.next()){
+        data.add(new Person(String.valueOf(data.size()+1),result.getString(2),Sex.valueOf(result.getString(3)),result.getString(4)));
+        }
+        } catch (SQLException ex) {
+        Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        flag=true;
+        }
+        try {
+        result.close();
+        } catch (SQLException ex) {
+        Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        Collections.sort(data, (Person o1, Person o2) -> o1.compareTo(o2));
+        text.setText("");
+        for (int i=0;i<data.size();i++)
+        {
+        data.get(i).setIndex(Integer.toString(i));
+        text.appendText(data.get(i).printPerson());
+        }
+        if (flag==false){
+         menu3_1.setDisable(true);
+         menu3_2.setDisable(false);}
+    }
+    @FXML
+    private void export(){
+        database.executeUpdate("TRUNCATE phonebook;");
+        for (int i=0;i<data.size();i++){
+            database.executeUpdate("INSERT INTO phonebook VALUES('" + data.get(i).getIndex()+"','" + data.get(i).getName()+"','"+data.get(i).getGender()+"','"+data.get(i).getEmailAddress()+"');");
+        }
+        menu3_1.setDisable(false);
+        menu3_2.setDisable(true);
     }
    @FXML
    private void ex(){
